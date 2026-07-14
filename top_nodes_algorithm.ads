@@ -44,6 +44,15 @@ package Top_Nodes_Algorithm is
      (Cal   : in out Calendar;
       Shift : Natural := 1);
 
+   -- Get the current start time of the calendar window
+   function Get_Current_Start (Cal : Calendar) return Time_Point;
+
+   -- Query the current resource usage in a time range (for testing)
+   function Query_Ranges
+     (Cal        : Calendar;
+      Start_Time : Time_Point;
+      End_Time   : Time_Point) return Resource_Amount;
+
 private
 
    type Tree_Node is record
@@ -52,7 +61,11 @@ private
    end record;
 
    -- Segment trees bounded natively require max 4 * N nodes to guarantee space.
-   type Node_Array is array (Positive range <>) of Tree_Node;
+   -- Use a large enough constant for the node array
+   Max_Capacity_Constant : constant Positive := 1000;
+   Max_Reservations_Constant : constant Positive := 1000;
+   
+   type Node_Array is array (1 .. 4 * Max_Capacity_Constant) of Tree_Node;
    type Optional_ID is new Natural; -- 0 represents Null
 
    type Reservation_Record is record
@@ -64,16 +77,16 @@ private
       Next       : Optional_ID := 0;
    end record;
 
-   type Reservation_Array is array (Reservation_ID range <>) of Reservation_Record;
+   type Reservation_Array is array (1 .. Max_Reservations_Constant) of Reservation_Record;
 
    type Calendar (Capacity : Positive; Max_Reservations : Positive) is tagged record
       Current_Start : Time_Point := 0;
       
       -- Perfect binary tree representation
-      Nodes         : Node_Array (1 .. Capacity * 4) := (others => (Max_Child_Q => 0, Top_Node_Res => 0));
+      Nodes         : Node_Array := (others => (Max_Child_Q => 0, Top_Node_Res => 0));
       
       -- Doubly linked list tracking in contiguous memory for fast boundary iteration
-      Reservations  : Reservation_Array (1 .. Reservation_ID (Max_Reservations));
+      Reservations  : Reservation_Array;
       Active_Head   : Optional_ID := 0;
       Last_ID       : Reservation_ID := 1;
    end record;

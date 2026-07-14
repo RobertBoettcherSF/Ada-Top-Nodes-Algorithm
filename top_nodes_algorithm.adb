@@ -155,6 +155,11 @@ package body Top_Nodes_Algorithm is
       end if;
    end Query_Ranges;
 
+   function Get_Current_Start (Cal : Calendar) return Time_Point is
+   begin
+      return Cal.Current_Start;
+   end Get_Current_Start;
+
    function Check_Availability
      (Cal          : Calendar;
       Start_Time   : Time_Point;
@@ -179,7 +184,7 @@ package body Top_Nodes_Algorithm is
       ID         : out Reservation_ID;
       Success    : out Boolean)
    is
-      New_ID : Reservation_ID := Cal.Last_ID;
+      New_ID : Integer := Integer(Cal.Last_ID);
       Found  : Boolean := False;
    begin
       Success := False;
@@ -189,12 +194,12 @@ package body Top_Nodes_Algorithm is
          return; -- Out of window bounds
       end if;
       
-      for I in 1 .. Reservation_ID(Cal.Max_Reservations) loop
+      for I in 1 .. Cal.Max_Reservations loop
          if not Cal.Reservations(New_ID).Is_Active then
             Found := True;
             exit;
          end if;
-         New_ID := (if New_ID = Reservation_ID(Cal.Max_Reservations) then 1 else New_ID + 1);
+         New_ID := (if New_ID = Cal.Max_Reservations then 1 else New_ID + 1);
       end loop;
       
       if not Found then
@@ -212,12 +217,12 @@ package body Top_Nodes_Algorithm is
                                    Next       => Cal.Active_Head);
                                    
       if Cal.Active_Head /= 0 then
-         Cal.Reservations(Reservation_ID(Cal.Active_Head)).Prev := Optional_ID(New_ID);
+         Cal.Reservations(Integer(Cal.Active_Head)).Prev := Optional_ID(New_ID);
       end if;
       Cal.Active_Head := Optional_ID(New_ID);
       
-      Cal.Last_ID := New_ID;
-      ID := New_ID;
+      Cal.Last_ID := Reservation_ID(New_ID);
+      ID := Reservation_ID(New_ID);
       Success := True;
    end Reserve;
 
@@ -226,19 +231,19 @@ package body Top_Nodes_Algorithm is
       ID  : Reservation_ID)
    is
    begin
-      if ID <= Reservation_ID(Cal.Max_Reservations) and then Cal.Reservations(ID).Is_Active then
-         Apply_To_Ranges (Cal, Cal.Reservations(ID).Start_Time, Cal.Reservations(ID).End_Time, Cal.Reservations(ID).Amount, False);
-         Cal.Reservations(ID).Is_Active := False;
+      if Integer(ID) <= Cal.Max_Reservations and then Cal.Reservations(Integer(ID)).Is_Active then
+         Apply_To_Ranges (Cal, Cal.Reservations(Integer(ID)).Start_Time, Cal.Reservations(Integer(ID)).End_Time, Cal.Reservations(Integer(ID)).Amount, False);
+         Cal.Reservations(Integer(ID)).Is_Active := False;
          
          -- Detach from Active List
-         if Cal.Reservations(ID).Prev /= 0 then
-            Cal.Reservations(Reservation_ID(Cal.Reservations(ID).Prev)).Next := Cal.Reservations(ID).Next;
+         if Cal.Reservations(Integer(ID)).Prev /= 0 then
+            Cal.Reservations(Integer(Cal.Reservations(Integer(ID)).Prev)).Next := Cal.Reservations(Integer(ID)).Next;
          else
-            Cal.Active_Head := Cal.Reservations(ID).Next;
+            Cal.Active_Head := Cal.Reservations(Integer(ID)).Next;
          end if;
          
-         if Cal.Reservations(ID).Next /= 0 then
-            Cal.Reservations(Reservation_ID(Cal.Reservations(ID).Next)).Prev := Cal.Reservations(ID).Prev;
+         if Cal.Reservations(Integer(ID)).Next /= 0 then
+            Cal.Reservations(Integer(Cal.Reservations(Integer(ID)).Next)).Prev := Cal.Reservations(Integer(ID)).Prev;
          end if;
       end if;
    end Delete_Reservation;
@@ -258,21 +263,21 @@ package body Top_Nodes_Algorithm is
       -- Traverse active reservations to prevent tracking tags from bleeding across 
       -- boundaries via the modulo structure.
       while Curr /= 0 loop
-         Next_Node := Cal.Reservations(Reservation_ID(Curr)).Next;
+         Next_Node := Cal.Reservations(Integer(Curr)).Next;
          
-         if Cal.Reservations(Reservation_ID(Curr)).End_Time < New_Start then
+         if Cal.Reservations(Integer(Curr)).End_Time < New_Start then
             -- Time completely expired
             Delete_Reservation (Cal, Reservation_ID(Curr));
             
-         elsif Cal.Reservations(Reservation_ID(Curr)).Start_Time < New_Start then
+         elsif Cal.Reservations(Integer(Curr)).Start_Time < New_Start then
             -- Straddles sliding window boundary; drop the expired time slice
             declare
                ID : constant Reservation_ID := Reservation_ID(Curr);
-               R_End : constant Time_Point := Cal.Reservations(ID).End_Time;
-               R_Amt : constant Resource_Amount := Cal.Reservations(ID).Amount;
+               R_End : constant Time_Point := Cal.Reservations(Integer(ID)).End_Time;
+               R_Amt : constant Resource_Amount := Cal.Reservations(Integer(ID)).Amount;
             begin
-               Apply_To_Ranges (Cal, Cal.Reservations(ID).Start_Time, R_End, R_Amt, False);
-               Cal.Reservations(ID).Start_Time := New_Start;
+               Apply_To_Ranges (Cal, Cal.Reservations(Integer(ID)).Start_Time, R_End, R_Amt, False);
+               Cal.Reservations(Integer(ID)).Start_Time := New_Start;
                Apply_To_Ranges (Cal, New_Start, R_End, R_Amt, True);
             end;
          end if;

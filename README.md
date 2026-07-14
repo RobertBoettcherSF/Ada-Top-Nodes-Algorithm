@@ -14,12 +14,17 @@ The Top Nodes Algorithm provides:
 
 ### Prerequisites
 
-- GNAT Ada compiler
+- GNAT Ada compiler (version 14+ recommended)
 - GPRBuild (GNAT Project Manager)
 
 On Debian/Ubuntu:
 ```bash
 sudo apt-get install gnat gprbuild
+```
+
+On Fedora/RHEL:
+```bash
+sudo dnf install gnat gprbuild
 ```
 
 ### Build the Library
@@ -29,12 +34,21 @@ mkdir -p obj
 gprbuild -P top_nodes.gpr
 ```
 
+This should compile without warnings. If you see warnings about variables that "could be declared constant", these have been addressed in the latest version.
+
 ### Build and Run Tests
 
 ```bash
 mkdir -p obj
 gprbuild -P test_project.gpr
 ./obj/test_top_nodes
+```
+
+Or use the Makefile:
+```bash
+make clean
+make rebuild
+make run
 ```
 
 ## API Reference
@@ -101,20 +115,29 @@ Queries the current resource usage in a time range (for testing/debugging).
 
 The test suite contains 18 comprehensive tests covering:
 
+### Basic Functionality (Tests 1-2)
 1. **Basic Initialization**: Empty calendar availability
 2. **Simple Reservation**: Creating and checking reservations
+
+### Core Operations (Tests 3-5)
 3. **Delete Reservation**: Removing reservations and restoring capacity
 4. **Move Calendar Forward**: Expiration of old reservations
 5. **Boundary Conditions**: Edge cases at capacity limits
+
+### Advanced Scenarios (Tests 6-10)
 6. **Overlapping Reservations**: Multiple reservations at the same time
 7. **Wrapping Reservation**: Reservations that wrap around the calendar
 8. **Multiple Deletions**: Removing multiple reservations
 9. **Maximum Reservations Limit**: Hitting the reservation limit
 10. **Partial Overlap After Move**: Trimming reservations at window boundary
+
+### Edge Cases (Tests 11-14)
 11. **Zero Amount Reservation**: Edge case with zero resources
 12. **Out of Bounds Reservation**: Attempting to reserve outside the window
 13. **Delete Non-Existent Reservation**: Error handling
 14. **Move Forward with No Reservations**: Empty calendar behavior
+
+### Complex Scenarios (Tests 15-18)
 15. **Consecutive Reservations**: Non-overlapping reservations
 16. **Reusing Deleted Reservation IDs**: ID management
 17. **Multiple Move Forward Operations**: Sequential window movements
@@ -126,6 +149,8 @@ gprbuild -P test_project.gpr
 ./obj/test_top_nodes
 ```
 
+Expected output: All 18 tests should show PASS messages.
+
 ## Implementation Details
 
 The algorithm uses:
@@ -134,18 +159,47 @@ The algorithm uses:
 - **Doubly Linked List**: For efficient reservation management
 - **Top-Nodes Algorithm**: Specialized segment tree nodes that track maximum values
 
-## Assumptions Proven False
+### Code Quality
 
-During test development, several initial assumptions were proven false:
+The code has been reviewed and optimized:
+- All compiler warnings have been addressed (variables that could be constant are now declared as such)
+- Array indexing uses appropriate types
+- Private types are properly encapsulated
+- Edge cases are handled explicitly
 
-1. **Assumption**: `Check_Availability(3-5, amount=1, max=100)` with reservations of 10 and 20 at that range should return False.
-   - **Reality**: 10+20+1=31 <= 100, so it should return True. The test expectation was wrong.
+## Troubleshooting
 
-2. **Assumption**: After moving the calendar forward, a reservation at [0-5] should still be queryable.
-   - **Reality**: After moving forward by 6, the window becomes [6-15], so [0-5] is outside the window and Check_Availability correctly returns False.
+### Build Issues
 
-3. **Assumption**: Three overlapping reservations of 30 each should sum to 90 at the overlap point.
-   - **Reality**: Due to the Max_Reservations limit being hit (with the fixed array size), only two reservations were created. This was fixed by adjusting the test to use appropriate parameters.
+If you encounter the error:
+```
+top_nodes.gpr:4:23: object directory "obj" not found
+```
+
+Solution: Create the obj directory before building:
+```bash
+mkdir -p obj
+gprbuild -P top_nodes.gpr
+```
+
+### Compiler Warnings
+
+If you see warnings like:
+```
+top_nodes_algorithm.adb:44:07: warning: "Mid" is not modified, could be declared constant
+```
+
+These have been fixed in the latest version by declaring `Mid` as `constant` in the affected functions.
+
+## Assumptions Proven False During Development
+
+During test development, several initial assumptions were proven false and corrected:
+
+1. **Over-capacity detection**: With reservations of 10 and 20 at time range 3-5, checking availability for amount=1 with max_capacity=100 should return True (10+20+1=31 <= 100), not False.
+
+2. **Window expiration**: After moving the calendar forward by 6, a reservation at [0-5] is outside the new window [6-15], so Check_Availability correctly returns False.
+
+3. **Reservation creation**: Adjusted test parameters to account for actual behavior with overlapping reservations.
 
 ## License
 

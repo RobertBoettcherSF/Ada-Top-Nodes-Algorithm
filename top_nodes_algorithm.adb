@@ -41,7 +41,7 @@ package body Top_Nodes_Algorithm is
       Amount   : Resource_Amount;
       Is_Add   : Boolean)
    is
-      Mid : Natural := Node_L + (Node_R - Node_L) / 2;
+      Mid : constant Natural := Node_L + (Node_R - Node_L) / 2;
    begin
       -- Node entirely covers requested span: it is a "top-node"
       if Req_L <= Node_L and then Node_R <= Req_R then
@@ -102,7 +102,7 @@ package body Top_Nodes_Algorithm is
       Req_L    : Natural;
       Req_R    : Natural) return Resource_Amount
    is
-      Mid : Natural := Node_L + (Node_R - Node_L) / 2;
+      Mid : constant Natural := Node_L + (Node_R - Node_L) / 2;
       Max_Val, V1, V2 : Resource_Amount := 0;
    begin
       if Req_L <= Node_L and then Node_R <= Req_R then
